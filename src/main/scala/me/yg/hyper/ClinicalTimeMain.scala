@@ -6,9 +6,7 @@ import org.datavec.api.split.NumberedFileInputSplit
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator
 import org.deeplearning4j.eval.ROC
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
-import org.deeplearning4j.nn.conf.Updater
+import org.deeplearning4j.nn.conf.{ComputationGraphConfiguration, MultiLayerConfiguration, NeuralNetConfiguration, Updater}
 import org.deeplearning4j.nn.conf.layers.GravesLSTM
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer
 import org.deeplearning4j.nn.graph.ComputationGraph
@@ -39,6 +37,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.deeplearning4j.nn.conf.inputs.InputType
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.nd4j.evaluation.classification.Evaluation
 
 import scala.jdk.CollectionConverters._
@@ -111,7 +110,7 @@ object ClinicalTimeMain extends App {
     val LSTM_LAYER_SIZE = 200
     val NUM_LABEL_CLASSES = 2
 
-    val conf = new NeuralNetConfiguration.Builder()
+    val conf  = new NeuralNetConfiguration.Builder()
       .seed(RANDOM_SEED)
       .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
       .updater(new Adam(LEARNING_RATE))
@@ -136,26 +135,37 @@ object ClinicalTimeMain extends App {
       .setInputTypes(InputType.recurrent(86))
       .build()
 
-
+    // Load
+    val model = ComputationGraph.load(new File("model/clinic.mdl"), false)
 
     // Training
 //    val model = new ComputationGraph(conf)
 //    model.fit(trainData, 2)
 //    model.save(new File("model/clinic.mdl"))
 
-    // Load
-    val model = ComputationGraph.load(new File("model/clinic.mdl"), false)
+
 
     // Model Evaluation
-//    val roc = new ROC(100);
-//    while (testData.hasNext()) {
-//      val batch = testData.next();
-//      val output = model.output(batch.getFeatures());
-//      roc.evalTimeSeries(batch.getLabels(), output(0));
-//    }
-//    println("FINAL TEST AUC: " + roc.calculateAUC());
+    val roc = new ROC(100);
+    while (testData.hasNext()) {
+      val batch = testData.next();
+      val output = model.output(batch.getFeatures());
+      roc.evalTimeSeries(batch.getLabels(), output(0));
+    }
+    println("FINAL TEST AUC: " + roc.calculateAUC());
 
     println("Eval => " + model.evaluate(testData))
+    println("-----------------------------------")
+
+//    val eval = new Evaluation(2)
+//    while(testData.hasNext) {
+//      val next = testData.next()
+//      val output = model.output(next.getFeatures)
+//      eval.eval(next.getLabels, output(0))
+//    }
+//
+//    println(eval.stats)
+//    println("Finished ..")
   }
 }
 
