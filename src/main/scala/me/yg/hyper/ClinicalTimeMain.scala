@@ -39,6 +39,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.nd4j.evaluation.classification.Evaluation
+import org.nd4j.evaluation.regression.RegressionEvaluation
 
 import scala.jdk.CollectionConverters._
 
@@ -74,16 +75,16 @@ object ClinicalTimeMain extends App {
 //  trainDt.asList().asScala.map(ds => ds.asList().forEach(println))
 //  trainFeatures.next().asScala.foreach(println)
 
-  println("--------------ds---------------")
-//  println("==========>" + trainData.next().asList().size())
-//  trainData.next().asScala.foreach(println)
-  trainData.next().asScala.foreach(ds => {
-    println("row ===========================")
-    ds.get(0).asList().asScala.foreach(col => {
-      println("col =============")
-      col.toString
-    })
-  })
+//  println("--------------ds---------------")
+////  println("==========>" + trainData.next().asList().size())
+////  trainData.next().asScala.foreach(println)
+//  trainData.next().asScala.foreach(ds => {
+////    println("row ===========================")
+//    ds.get(0).asList().asScala.foreach(col => {
+////      println("col =============")
+//      col.toString
+//    })
+//  })
 
 
   // Load testing data
@@ -143,20 +144,42 @@ object ClinicalTimeMain extends App {
 //    model.fit(trainData, 2)
 //    model.save(new File("model/clinic.mdl"))
 
+    // RegEvaluation
+//    println("--------------------------------------------------------")
+//    val eval = model.evaluateRegression[RegressionEvaluation](testData)
+//
+//    testData.reset()
+//    println
+//
+//    println("Eval => " + eval.stats())
+
 
 
     // Model Evaluation
-    val roc = new ROC(100);
+    val roc = new ROC(2);
     while (testData.hasNext()) {
       val batch = testData.next();
       val output = model.output(batch.getFeatures());
+      println("-- (processing) --------->")
+//      for (elem <- output.toList) {
+//        println("elem :" + elem.getDouble(0L) + "/" + elem.getDouble(1L)
+//          + "/" + elem.getDouble(2L) + "/" + elem.getDouble(3L))
+//      }
+
+//      println("batchLabel =>" + batch.getLabels.getRow(0L))
+      println(output.length + " -- " + output(0))
       roc.evalTimeSeries(batch.getLabels(), output(0));
+      println("AUC in Processing = " + roc.calculateAUC())
     }
+
+
     println("FINAL TEST AUC: " + roc.calculateAUC());
 
-    println("Eval => " + model.evaluate(testData))
-    println("-----------------------------------")
 
+//    println("Eval => " + model.evaluate(testData))
+//    println("-----------------------------------")
+
+    // Evaluation2
 //    val eval = new Evaluation(2)
 //    while(testData.hasNext) {
 //      val next = testData.next()
