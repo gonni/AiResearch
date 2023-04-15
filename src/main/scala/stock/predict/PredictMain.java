@@ -22,16 +22,18 @@ public class PredictMain extends StockPricePrediction {
 
     public static void main(String ... v) throws IOException {
         System.out.println("Active .. ");
-        String file = "datafile/prices-split-adjusted.csv";
+//        String file = "datafile/prices-split-adjusted.csv";
+        String file = "datafile/kospi.csv";
 
-        String symbol = "GOOG"; // stock name
+        String symbol =  "KOSPI"; //"GOOG"; // stock name
         int batchSize = 64; // mini-batch size
         double splitRatio = 0.9; // 90% for training, 10% for testing
         int epochs = 10; // training epochs
 
         log.info("Create dataSet iterator...");
         PriceCategory category = PriceCategory.CLOSE; // CLOSE: predict close price
-        StockDataSetIterator iterator = new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
+        StockDataSetIterator iterator =
+                new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         log.info("Load test dataset...");
 
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
@@ -39,13 +41,14 @@ public class PredictMain extends StockPricePrediction {
         log.info("Build lstm networks...");
         MultiLayerNetwork net = RecurrentNets.buildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
 
+        File locationToSave = new File("model/KospiLSTM".concat(String.valueOf(category)).concat(".zip"));
+
         log.info("Training...");
         net.fit(iterator, epochs);
 
         log.info("Saving model...");
-        File locationToSave = new File("model/StockPriceLSTM_".concat(String.valueOf(category)).concat(".zip"));
         ModelSerializer.writeModel(net, locationToSave, true);
-//
+
         log.info("Load model...");
 //        net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
         net = MultiLayerNetwork.load(locationToSave, true);
