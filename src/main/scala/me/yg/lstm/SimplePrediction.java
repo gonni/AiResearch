@@ -38,7 +38,7 @@ public class SimplePrediction {
     public static void main(String ... v) {
         System.out.println("Active System ..");
 
-        DataSetIterator trainIterator = new LotteryDataSetIterator(new File(dataLocalPath,"cqssc_train.csv").getAbsolutePath(), batchSize, modelType);
+        DataSetIterator trainIterator = new LotteryDataSetIterator(new File(dataLocalPath,"cqssc_train.csv").getAbsolutePath(), 2, modelType);
         DataSetIterator testIterator = new LotteryDataSetIterator(new File(dataLocalPath, "cqssc_test.csv").getAbsolutePath(), 2, modelType);
         DataSetIterator validateIterator = new LotteryDataSetIterator(new File(dataLocalPath, "cqssc_validate.csv").getAbsolutePath(), 2, modelType);
 
@@ -60,12 +60,23 @@ public class SimplePrediction {
             e.printStackTrace();
         }
 
-        int luckySize = 5;
+//        DataSet ds0 = testIterator.next();
+//        System.out.println("feature0 =>\n" + ds0.getFeatures());
+//        System.out.println("label0 =>\n" + ds0.getLabels());
+//
+//        ds0 = testIterator.next();
+//        System.out.println("feature1 =>\n" + ds0.getFeatures());
+//        System.out.println("label1 =>\n" + ds0.getLabels());
+
+//        testIterator.reset();
+
+         int luckySize = 5;
         if (modelType && model != null) {
             while (testIterator.hasNext()) {
                 DataSet ds = testIterator.next();
                 //predictions all at once
-                INDArray output = model.output(ds.getFeatures());
+//                INDArray output = model.output(ds.getFeatures());
+                INDArray output = model.rnnTimeStep(ds.getFeatures());
                 INDArray label = ds.getLabels();
                 INDArray preOutput = Nd4j.argMax(output, 2);
                 INDArray realLabel = Nd4j.argMax(label, 2);
@@ -75,8 +86,9 @@ public class SimplePrediction {
                     peLabel.append(preOutput.getInt(dataIndex));
                     reLabel.append(realLabel.getInt(dataIndex));
                 }
-                log.info("test-->real lottery {}  prediction {} status {}", reLabel.toString(), peLabel.toString(), peLabel.toString().equals(reLabel.toString()));
+//                log.info("test-->real lottery {}  prediction {} status {}", reLabel.toString(), peLabel.toString(), peLabel.toString().equals(reLabel.toString()));
             }
+            // ------------
             while (validateIterator.hasNext()) {
                 DataSet ds = validateIterator.next();
                 //predictions all at once
@@ -90,8 +102,9 @@ public class SimplePrediction {
                     peLabel.append(preOutput.getInt(dataIndex));
                     reLabel.append(realLabel.getInt(dataIndex));
                 }
-                log.info("validate-->real lottery {}  prediction {} status {}", reLabel.toString(), peLabel.toString(), peLabel.toString().equals(reLabel.toString()));
+//                log.info("validate-->real lottery {}  prediction {} status {}", reLabel.toString(), peLabel.toString(), peLabel.toString().equals(reLabel.toString()));
             }
+            // ------------------
 
             String currentLottery = "27578";
             INDArray initCondition = Nd4j.zeros(1, 5, 10);

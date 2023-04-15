@@ -40,8 +40,8 @@ import org.nd4j.linalg.learning.config.{AdaGrad, Adam}
 object SeaTempLstmMain extends App {
   val DATA_URL = "https://dl4jdata.blob.core.windows.net/training/seatemp/sea_temp.tar.gz"
 //  val DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"), "dl4j_seas/")
-  val DATA_PATH = "/Users/a1000074/dev/sample/"
-
+//  val DATA_PATH = "/Users/a1000074/dev/sample/"
+    val DATA_PATH = "/Users/ygkim/dev/sample/"
 //  // Init File
 //  val directory = new File(DATA_PATH)
 //  directory.mkdir()
@@ -196,6 +196,13 @@ object SeaTempLstmMain extends App {
   // Train model on training set
   net.fit(train, 25)
 
+  println("Training Finished ..")
+
+  val predict = net.rnnTimeStep(test.next().getFeatures)
+
+  println("predict ->" +  predict)
+
+  println("Evaluation ...")
   // Model Evaluation
   val eval = net.evaluateRegression[RegressionEvaluation](test);
 

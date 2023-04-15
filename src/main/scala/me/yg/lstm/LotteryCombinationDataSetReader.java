@@ -51,6 +51,7 @@ public class LotteryCombinationDataSetReader extends BaseDataSetReader  {
                 currentCursor ++;
             }
             String featureStr = currentValStr;
+            System.out.println("featureStr ->" + featureStr);
 
             featureStr = featureStr.split(",")[2];
             String[] featureAry = featureStr.split("");
