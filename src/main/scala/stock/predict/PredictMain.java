@@ -27,7 +27,7 @@ public class PredictMain extends StockPricePrediction {
 
         String symbol =  "KOSPI"; //"GOOG"; // stock name
         int batchSize = 64; // mini-batch size
-        double splitRatio = 0.9; // 90% for training, 10% for testing
+        double splitRatio = 0.98; // 90% for training, 10% for testing
         int epochs = 100; // training epochs
 
         log.info("Create dataSet iterator...");

@@ -38,7 +38,8 @@ public class RecurrentNets {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.XAVIER)
 //                .updater(new Nadam())
-                .updater(Updater.ADAM)
+//                .updater(Updater.ADAM) // --
+                .updater(Updater.ADADELTA)
 //                .regularization(true)
                 .l2(1e-4)
 //                .gradientNormalizationThreshold(0.5)
