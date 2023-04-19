@@ -43,11 +43,11 @@ public class PredictMain extends StockPricePrediction {
 
         File locationToSave = new File("model/KospiLSTM".concat(String.valueOf(category)).concat(".zip"));
 
-        log.info("Training...");
-        net.fit(iterator, epochs);
-
-        log.info("Saving model...");
-        ModelSerializer.writeModel(net, locationToSave, true);
+//        log.info("Training...");
+//        net.fit(iterator, epochs);
+//
+//        log.info("Saving model...");
+//        ModelSerializer.writeModel(net, locationToSave, true);
 
         log.info("Load model...");
 //        net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);
@@ -74,24 +74,23 @@ public class PredictMain extends StockPricePrediction {
         double[] predicts = new double[testData.size()];
         double[] actuals = new double[testData.size()];
 
+        System.out.println("size of test data : " + testData.size()); // -- total date range to predict
         for (int i = 0; i < testData.size(); i++) {
-            double a = (testData.get(i).getKey()).getDouble(exampleLength - 1);
-            System.out.println("input ->" + a);
+//            double a = (testData.get(i).getKey()).getDouble(exampleLength - 1); // exampleLength = 22
+//            System.out.println("test unit input ->" + a + " ==>\n" + testData.get(i).getKey());
             INDArray output = net.rnnTimeStep(testData.get(i).getKey());
-            System.out.println("output -> " + output.getDouble(exampleLength - 1));
+            System.out.println(i + "\toutput =>" + output);
 
             predicts[i] = output.getDouble(exampleLength - 1) * (max - min) + min;
             actuals[i] = testData.get(i).getValue().getDouble(0);
 
-            System.out.println(a + "->" + predicts[i] + "/" + actuals[i]);
+//            System.out.println(a + "->" + predicts[i] + "/" + actuals[i]);
         }
         log.info("Print out Predictions and Actual Values...");
         log.info("Predict,Actual");
         for (int i = 0; i < predicts.length; i++) log.info(predicts[i] + "," + actuals[i]);
         log.info("Plot...");
         PlotUtil.plot(predicts, actuals, String.valueOf(category));
-
     }
-
 
 }
