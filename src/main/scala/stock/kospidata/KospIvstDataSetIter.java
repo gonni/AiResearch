@@ -37,6 +37,9 @@ public class KospIvstDataSetIter implements DataSetIterator {
 
     }
 
+    public KospIvstDataSetIter() {
+    }
+
     private List<KospiData> readKospiDataFromFile(String filename) {
         List<KospiData> kospiDataList = new ArrayList<>();
         try {
@@ -46,19 +49,28 @@ public class KospIvstDataSetIter implements DataSetIterator {
             }
             List<String[]> list = new CSVReader(new FileReader(filename)).readAll(); // load all elements in a list
             for (String[] arr : list) {
-//                if (!arr[1].equals(symbol)) continue;
+                if (arr[0].contains("TARGET")) continue;
                 double[] nums = new double[VECTOR_SIZE];
-                for (int i = 0; i < arr.length - 2; i++) {
-                    nums[i] = Double.valueOf(arr[i + 2]);
+                for (int i = 0; i < arr.length - 1; i++) {
+                    nums[i] = Double.valueOf(arr[i + 1]);
                     if (nums[i] > maxArray[i]) maxArray[i] = nums[i];
                     if (nums[i] < minArray[i]) minArray[i] = nums[i];
                 }
                 //stockDataList.add(new StockData(arr[0], arr[1], nums[0], nums[1], nums[2], nums[3], nums[4]));
+                kospiDataList.add(new KospiData(
+                        arr[0],nums[0],nums[1],nums[2],nums[3],nums[4],nums[5],nums[6],nums[7],nums[8]
+                ));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
         return kospiDataList;
+    }
+
+    public static void main(String ... v) {
+        System.out.println("Test Module");
+        KospIvstDataSetIter test = new KospIvstDataSetIter();
+        test.readKospiDataFromFile("datafile/kospi_with_investor.csv").forEach(System.out::println);
     }
 
     @Override

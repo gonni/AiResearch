@@ -47,6 +47,7 @@ lazy val root = (project in file("."))
       "org.junit.jupiter" % "junit-jupiter-engine" % "5.8.0-M1",
       "org.junit.jupiter" % "junit-jupiter-api" % "5.8.0-M1",
 
-      "com.opencsv" % "opencsv" % "3.9"
+      "com.opencsv" % "opencsv" % "3.9",
+      "org.projectlombok" % "lombok" % "1.18.26" % "provided"
     )
   )

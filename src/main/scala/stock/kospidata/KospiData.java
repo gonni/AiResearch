@@ -1,5 +1,10 @@
 package stock.kospidata;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@AllArgsConstructor
+@Data
 public class KospiData {
     private String date ;
     private double indexValue ;
