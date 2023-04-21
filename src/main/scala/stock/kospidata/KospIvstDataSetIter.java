@@ -33,11 +33,45 @@ public class KospIvstDataSetIter implements DataSetIterator {
     private List<KospiData> train ;
     private List<Pair<INDArray, INDArray>> test;
 
-    public KospIvstDataSetIter(String filename, String symbol, int miniBatchSize, int exampleLength, double splitRatio) {
+    public KospIvstDataSetIter(String filename, int miniBatchSize, int exampleLength, double splitRatio) {
+        List<KospiData> allKospiDataList = readKospiDataFromFile(filename);
+        this.miniBatchSize = miniBatchSize;
+        this.exampleLength = exampleLength;
+        int split = (int) Math.round(allKospiDataList.size() * splitRatio);
+        System.out.println("----- train:test split :" + split);
+        train = allKospiDataList.subList(0, split);
+        test = generateTestDataSet(allKospiDataList.subList(split, allKospiDataList.size()));
 
     }
 
-    public KospIvstDataSetIter() {
+    private List<Pair<INDArray, INDArray>> generateTestDataSet (List<KospiData> stockDataList) {
+        int window = exampleLength + predictLength; // = 22 + 1
+        List<Pair<INDArray, INDArray>> test = new ArrayList<>();
+
+        for (int i = 0; i < stockDataList.size() - window; i++) {
+            INDArray input = Nd4j.create(new int[] {exampleLength, VECTOR_SIZE}, 'f');
+            for (int j = i; j < i + exampleLength; j++) {
+                // -- Create 22(exampleLength) rows with 9 columns per row
+                KospiData stock = stockDataList.get(j);
+                input.putScalar(new int[] {j - i, 0}, (stock.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]));
+                input.putScalar(new int[] {j - i, 1}, (stock.getTotalEa() - minArray[1]) / (maxArray[1] - minArray[1]));
+                input.putScalar(new int[] {j - i, 2}, (stock.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
+                input.putScalar(new int[] {j - i, 3}, (stock.getAnt() - minArray[3]) / (maxArray[3] - minArray[3]));
+                input.putScalar(new int[] {j - i, 4}, (stock.getForeigner() - minArray[4]) / (maxArray[4] - minArray[4]));
+                input.putScalar(new int[] {j - i, 5}, (stock.getCompany() - minArray[5]) / (maxArray[5] - minArray[5]));
+                input.putScalar(new int[] {j - i, 6}, (stock.getInvestBank() - minArray[6]) / (maxArray[6] - minArray[6]));
+                input.putScalar(new int[] {j - i, 7}, (stock.getInvestTrust() - minArray[7]) / (maxArray[7] - minArray[7]));
+                input.putScalar(new int[] {j - i, 8}, (stock.getPensionFund() - minArray[8]) / (maxArray[8] - minArray[8]));
+            }
+
+            // create Label
+            KospiData stock = stockDataList.get(i + exampleLength);
+            INDArray label =  Nd4j.create(new int[] {1}, 'f');
+            label.putScalar(new int[]{0}, stock.getIndexValue());
+
+            test.add(new Pair<>(input, label));
+        }
+        return test ;
     }
 
     private List<KospiData> readKospiDataFromFile(String filename) {
@@ -67,30 +101,63 @@ public class KospIvstDataSetIter implements DataSetIterator {
         return kospiDataList;
     }
 
-    public static void main(String ... v) {
-        System.out.println("Test Module");
-        KospIvstDataSetIter test = new KospIvstDataSetIter();
-        test.readKospiDataFromFile("datafile/kospi_with_investor.csv").forEach(System.out::println);
-    }
 
     @Override
     public DataSet next(int num) {
-        return null;
+        if (exampleStartOffsets.size() == 0) throw new NoSuchElementException();    // private LinkedList<Integer> exampleStartOffsets = new LinkedList<>();
+        int actualMiniBatchSize = Math.min(num, exampleStartOffsets.size());    // all - (22+1)
+
+        INDArray input = Nd4j.create(new int[] {actualMiniBatchSize, VECTOR_SIZE, exampleLength}, 'f'); // _,9,22
+        INDArray label = Nd4j.create(new int[] {actualMiniBatchSize, predictLength, exampleLength}, 'f'); // _,1,22
+
+        for (int index = 0; index < actualMiniBatchSize; index++) {
+            int startIdx = exampleStartOffsets.removeFirst();
+            int endIdx = startIdx + exampleLength;
+//            System.out.println("----------start=" + startIdx + ", endIdx=" + endIdx);
+            KospiData curData = train.get(startIdx);    // get first - end block list  |start - [window] - end|
+
+            KospiData nextData;
+            for (int i = startIdx; i < endIdx; i++) {
+                int c = i - startIdx;
+                input.putScalar(new int[]{index, 0, c}, (curData.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]));
+                input.putScalar(new int[]{index, 1, c}, (curData.getTotalEa() - minArray[1]) / (maxArray[1] - minArray[1]));
+                input.putScalar(new int[]{index, 2, c}, (curData.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
+                input.putScalar(new int[]{index, 3, c}, (curData.getAnt() - minArray[3]) / (maxArray[3] - minArray[3]));
+                input.putScalar(new int[]{index, 4, c}, (curData.getForeigner() - minArray[4]) / (maxArray[4] - minArray[4]));
+                input.putScalar(new int[]{index, 5, c}, (curData.getCompany() - minArray[5]) / (maxArray[5] - minArray[5]));
+                input.putScalar(new int[]{index, 6, c}, (curData.getInvestBank() - minArray[6]) / (maxArray[6] - minArray[6]));
+                input.putScalar(new int[]{index, 7, c}, (curData.getInvestTrust() - minArray[7]) / (maxArray[7] - minArray[7]));
+                input.putScalar(new int[]{index, 8, c}, (curData.getPensionFund() - minArray[8]) / (maxArray[8] - minArray[8]));
+
+                nextData = train.get(i + 1);
+                label.putScalar(new int[]{index, 0, c}, (nextData.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]));
+                curData = nextData;
+            }
+            if (exampleStartOffsets.size() == 0) break;
+        }
+
+        return new DataSet(input, label);
     }
+
+    public List<Pair<INDArray, INDArray>> getTestDataSet() { return test; }
+
+    public double getMaxIndexValue() { return maxArray[0]; }
+
+    public double getMinIndexValue() { return minArray[0]; }
 
     @Override
     public int inputColumns() {
-        return 0;
+        return VECTOR_SIZE;
     }
 
     @Override
     public int totalOutcomes() {
-        return 0;
+        return predictLength;
     }
 
     @Override
     public boolean resetSupported() {
-        return false;
+        return true;
     }
 
     @Override
@@ -100,36 +167,49 @@ public class KospIvstDataSetIter implements DataSetIterator {
 
     @Override
     public void reset() {
+        initializeOffsets();
+    }
 
+    private void initializeOffsets () {
+        exampleStartOffsets.clear();
+        int window = exampleLength + predictLength; // 22 + 1
+        for (int i = 0; i < train.size() - window; i++) { exampleStartOffsets.add(i); }
     }
 
     @Override
     public int batch() {
-        return 0;
+        return miniBatchSize;
     }
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-
+        throw new UnsupportedOperationException("Not Implemented");
     }
 
     @Override
     public DataSetPreProcessor getPreProcessor() {
-        return null;
+        throw new UnsupportedOperationException("Not Implemented");
     }
 
     @Override
     public List<String> getLabels() {
-        return null;
+        throw new UnsupportedOperationException("Not Implemented");
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        return exampleStartOffsets.size() > 0;
     }
 
     @Override
     public DataSet next() {
-        return null;
+        return next(miniBatchSize);
+    }
+
+
+    public static void main(String ... v) {
+        System.out.println("Test Module");
+//        KospIvstDataSetIter test = new KospIvstDataSetIter();
+//        test.readKospiDataFromFile("datafile/kospi_with_investor.csv").forEach(System.out::println);
     }
 }
