@@ -20,7 +20,7 @@ public class KospIvstDataSetIter implements DataSetIterator {
     private final int VECTOR_SIZE = 9; // number of features for a stock data
     private int miniBatchSize; // mini-batch size
     private int exampleLength = 22; // default 22, say, 22 working days per month
-    private int predictLength = 1; // default 1, say, one day ahead prediction
+    private int predictLength = 3; // default 1, say, one day ahead prediction
 
     /** minimal values of each feature in stock dataset */
     private double[] minArray = new double[VECTOR_SIZE];
