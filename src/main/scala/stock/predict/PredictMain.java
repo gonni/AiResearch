@@ -28,10 +28,10 @@ public class PredictMain extends StockPricePrediction {
         String symbol =  "KOSPI"; //"GOOG"; // stock name
         int batchSize = 64; // mini-batch size
         double splitRatio = 0.98; // 90% for training, 10% for testing
-        int epochs = 100; // training epochs
+        int epochs = 8; // training epochs
 
         log.info("Create dataSet iterator...");
-        PriceCategory category = PriceCategory.CLOSE; // CLOSE: predict close price
+        PriceCategory category = PriceCategory.ALL; // CLOSE: predict close price
         StockDataSetIterator iterator =
                 new StockDataSetIterator(file, symbol, batchSize, exampleLength, splitRatio, category);
         log.info("Load test dataset...");
@@ -43,11 +43,11 @@ public class PredictMain extends StockPricePrediction {
 
         File locationToSave = new File("model/KospiLSTM".concat(String.valueOf(category)).concat(".zip"));
 
-//        log.info("Training...");
-//        net.fit(iterator, epochs);
-//
-//        log.info("Saving model...");
-//        ModelSerializer.writeModel(net, locationToSave, true);
+        log.info("Training...");
+        net.fit(iterator, epochs);
+
+        log.info("Saving model...");
+        ModelSerializer.writeModel(net, locationToSave, true);
 
         log.info("Load model...");
 //        net = ModelSerializer.restoreMultiLayerNetwork(locationToSave);

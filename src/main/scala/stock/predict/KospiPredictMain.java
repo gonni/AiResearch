@@ -24,7 +24,7 @@ public class KospiPredictMain {
 
         int batchSize = 64; // mini-batch size
         double splitRatio = 0.98; // 90% for training, 10% for testing
-        int epochs = 100; // training epochs
+        int epochs = 3; // training epochs
 
         KospIvstDataSetIter iterator = new KospIvstDataSetIter(file, batchSize, exampleLength, splitRatio);
 
@@ -33,12 +33,14 @@ public class KospiPredictMain {
         log.info("Build lstm networks...");
         MultiLayerNetwork net = RecurrentNets.buildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
 
-        File modelFile = new File("model/KospiIndex.mdl");
+        File modelFile = new File("model/KospiIndexEp100.mdl");
 
         log.info("Start Training ..");
         net.fit(iterator, epochs);
         log.info("Save Model ..");
         ModelSerializer.writeModel(net, modelFile, true);
+
+        net = MultiLayerNetwork.load(modelFile, true);
 
         log.info("Testing ..");
         double maxIndexValue = iterator.getMaxIndexValue();
