@@ -6,10 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import stock.kospidata.KospIvstDataSetIter;
-import stock.kospidata.KospiAllDsIterator;
-import stock.kospidata.KospiHybridDsIterator;
-import stock.kospidata.KospiIndexCategory;
+import stock.kospidata.*;
 import stock.model.RecurrentNets;
 import stock.representation.PriceCategory;
 import stock.utils.PlotUtil;
@@ -35,14 +32,14 @@ public class KospiHybridPredictMain {
 
         KospiIndexCategory category = KospiIndexCategory.ALL;
 
-        KospiHybridDsIterator iterator = new KospiHybridDsIterator(file, batchSize, exampleLength, splitRatio, category);
-
+//        KospiHybridDsIterator iterator = new KospiHybridDsIterator(file, batchSize, exampleLength, splitRatio, category);
+        KospiPartDsIterator iterator = new KospiPartDsIterator(file, batchSize, exampleLength, splitRatio, category);
         List<Pair<INDArray, INDArray>> test = iterator.getTestDataSet();
 
         log.info("Build lstm networks...");
         MultiLayerNetwork net = RecurrentNets.buildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
 
-        File modelFile = new File("model/KospiHybridIndex.mdl");
+        File modelFile = new File("model/Kospi3Indexes.mdl");
 
         log.info("Start Training ..");
         net.fit(iterator, epochs);
@@ -72,7 +69,7 @@ public class KospiHybridPredictMain {
         log.info("Predict\tActual");
         for (int i = 0; i < predicts.length; i++) log.info(predicts[i] + "\t" + actuals[i]);
         log.info("Plot...");
-        for (int n = 0; n < 9; n++) {
+        for (int n = 0; n < 3; n++) {
             double[] pred = new double[predicts.length];
             double[] actu = new double[actuals.length];
             for (int i = 0; i < predicts.length; i++) {
