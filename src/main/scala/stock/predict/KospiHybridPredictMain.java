@@ -62,14 +62,15 @@ public class KospiHybridPredictMain {
         INDArray[] predicts = new INDArray[testData.size()];
         INDArray[] actuals = new INDArray[testData.size()];
         for (int i = 0; i < testData.size(); i++) {
-            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1).mul(max.sub(min)).add(min);
+            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1).mul(max.sub(min)).add(min).mul(2);
+//            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
             actuals[i] = testData.get(i).getValue();
         }
         log.info("Print out Predictions and Actual Values...");
         log.info("Predict\tActual");
         for (int i = 0; i < predicts.length; i++) log.info(predicts[i] + "\t" + actuals[i]);
         log.info("Plot...");
-        for (int n = 0; n < 3; n++) {
+        for (int n = 0; n < 2; n++) {
             double[] pred = new double[predicts.length];
             double[] actu = new double[actuals.length];
             for (int i = 0; i < predicts.length; i++) {
