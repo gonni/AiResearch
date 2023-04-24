@@ -28,7 +28,7 @@ public class KospiHybridPredictMain {
 
         int batchSize = 64; // mini-batch size
         double splitRatio = 0.98; // 90% for training, 10% for testing
-        int epochs = 10; // training epochs
+        int epochs = 3; // training epochs
 
         KospiIndexCategory category = KospiIndexCategory.ALL;
 
@@ -39,7 +39,7 @@ public class KospiHybridPredictMain {
         log.info("Build lstm networks...");
         MultiLayerNetwork net = RecurrentNets.buildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
 
-        File modelFile = new File("model/Kospi3Indexes.mdl");
+        File modelFile = new File("model/Kospi2Indexes.mdl");
 
         log.info("Start Training ..");
         net.fit(iterator, epochs);
@@ -59,10 +59,19 @@ public class KospiHybridPredictMain {
 
     /** Predict all the features (open, close, low, high prices and volume) of a stock one-day ahead */
     static void predictAllCategories (MultiLayerNetwork net, List<Pair<INDArray, INDArray>> testData, INDArray max, INDArray min) {
+
+        System.out.println("Max -> " + max);
+        System.out.println("---------------------");
+        System.out.println("Min -> " + min);
+
+
         INDArray[] predicts = new INDArray[testData.size()];
         INDArray[] actuals = new INDArray[testData.size()];
         for (int i = 0; i < testData.size(); i++) {
-            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1).mul(max.sub(min)).add(min).mul(2);
+            System.out.println("Input ->" + testData.get(i).getKey()) ;
+            INDArray output = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
+            System.out.println("Predict Output ->" + output) ;
+            predicts[i] = output.mul(max.sub(min)).add(min);
 //            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
             actuals[i] = testData.get(i).getValue();
         }
@@ -70,7 +79,7 @@ public class KospiHybridPredictMain {
         log.info("Predict\tActual");
         for (int i = 0; i < predicts.length; i++) log.info(predicts[i] + "\t" + actuals[i]);
         log.info("Plot...");
-        for (int n = 0; n < 2; n++) {
+        for (int n = 0; n < 3; n++) {
             double[] pred = new double[predicts.length];
             double[] actu = new double[actuals.length];
             for (int i = 0; i < predicts.length; i++) {

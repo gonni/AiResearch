@@ -20,7 +20,7 @@ import java.util.*;
 public class KospiPartDsIterator implements DataSetIterator {
     /** category and its index */
     private final Map<KospiIndexCategory, Integer> featureMapIndex = new HashMap<>();
-    private final int VECTOR_SIZE = 2; // number of features for a stock data
+    private final int VECTOR_SIZE = 3; // number of features for a stock data
     private int miniBatchSize; // mini-batch size
     private int exampleLength = 22; // default 22, say, 22 working days per month
     private int predictLength = 1; // default 1, say, one day ahead prediction
@@ -45,7 +45,7 @@ public class KospiPartDsIterator implements DataSetIterator {
                                  double splitRatio, KospiIndexCategory category) {
         featureMapIndex.put(KospiIndexCategory.INDEX_VALUE, 0);
         featureMapIndex.put(KospiIndexCategory.TOTAL_EA, 1);
-//        featureMapIndex.put(KospiIndexCategory.TOTAL_VOLUME, 2);
+        featureMapIndex.put(KospiIndexCategory.TOTAL_VOLUME, 2);
 
         List<PartKospiData> stockDataList = readStockDataFromFile(filename);
         this.miniBatchSize = miniBatchSize;
@@ -102,13 +102,13 @@ public class KospiPartDsIterator implements DataSetIterator {
                 int c = i - startIdx;
                 input.putScalar(new int[]{index, 0, c}, (curData.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]));
                 input.putScalar(new int[]{index, 1, c}, (curData.getTotalEa() - minArray[1]) / (maxArray[1] - minArray[1]));
-//                input.putScalar(new int[]{index, 2, c}, (curData.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
+                input.putScalar(new int[]{index, 2, c}, (curData.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
 
                 nextData = train.get(i + 1);
                 if (category.equals(KospiIndexCategory.ALL)) {
                     label.putScalar(new int[]{index, 0, c}, (nextData.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]));
                     label.putScalar(new int[]{index, 1, c}, (nextData.getTotalEa() - minArray[1]) / (maxArray[1] - minArray[1]));
-//                    label.putScalar(new int[]{index, 2, c}, (nextData.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
+                    label.putScalar(new int[]{index, 2, c}, (nextData.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
                 } else {
                     label.putScalar(new int[]{index, 0, c}, feedLabel(nextData));
                 }
@@ -124,7 +124,7 @@ public class KospiPartDsIterator implements DataSetIterator {
         switch (category) {
             case INDEX_VALUE: value = (data.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]); break;
             case TOTAL_EA: value = (data.getTotalEa() - minArray[1]) / (maxArray[1] - minArray[1]); break;
-//            case TOTAL_VOLUME: value = (data.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]); break;
+            case TOTAL_VOLUME: value = (data.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]); break;
             default: throw new NoSuchElementException();
         }
         return value;
@@ -172,7 +172,7 @@ public class KospiPartDsIterator implements DataSetIterator {
                 PartKospiData stock = stockDataList.get(j);
                 input.putScalar(new int[] {j - i, 0}, (stock.getIndexValue() - minArray[0]) / (maxArray[0] - minArray[0]));
                 input.putScalar(new int[] {j - i, 1}, (stock.getTotalEa() - minArray[1]) / (maxArray[1] - minArray[1]));
-//                input.putScalar(new int[] {j - i, 2}, (stock.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
+                input.putScalar(new int[] {j - i, 2}, (stock.getTotalVolume() - minArray[2]) / (maxArray[2] - minArray[2]));
             }
 
             PartKospiData stock = stockDataList.get(i + exampleLength);  // 22++
@@ -181,14 +181,14 @@ public class KospiPartDsIterator implements DataSetIterator {
                 label = Nd4j.create(new int[]{VECTOR_SIZE}, 'f'); // ordering is set as 'f', faster construct
                 label.putScalar(new int[]{0}, stock.getIndexValue());
                 label.putScalar(new int[]{1}, stock.getTotalEa());
-//                label.putScalar(new int[]{2}, stock.getTotalVolume());
+                label.putScalar(new int[]{2}, stock.getTotalVolume());
 
             } else {
                 label = Nd4j.create(new int[] {1}, 'f');
                 switch (category) {
                     case INDEX_VALUE: label.putScalar(new int[] {0}, stock.getIndexValue()); break;
                     case TOTAL_EA: label.putScalar(new int[] {0}, stock.getTotalEa()); break;
-//                    case TOTAL_VOLUME: label.putScalar(new int[] {0}, stock.getTotalVolume()); break;
+                    case TOTAL_VOLUME: label.putScalar(new int[] {0}, stock.getTotalVolume()); break;
                     default: throw new NoSuchElementException();
                 }
             }
@@ -207,14 +207,15 @@ public class KospiPartDsIterator implements DataSetIterator {
             List<String[]> list = new CSVReader(new FileReader(filename)).readAll(); // load all elements in a list
             for (String[] arr : list) {
 //                if (!arr[1].equals(symbol)) continue;
-                if (arr[0].contains("TARGET")) continue;
+                if (arr[0].contains("TARGET") || arr[1].equals("0") || arr[2].equals("0") || arr[3].equals("0")) continue;
+
                 double[] nums = new double[VECTOR_SIZE];
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < VECTOR_SIZE; i++) {
                     nums[i] = Double.valueOf(arr[i + 1]);
                     if (nums[i] > maxArray[i]) maxArray[i] = nums[i];
                     if (nums[i] < minArray[i]) minArray[i] = nums[i];
                 }
-                stockDataList.add(new PartKospiData(arr[0],nums[0],nums[1]));
+                stockDataList.add(new PartKospiData(arr[0],nums[0],nums[1], nums[2]));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -235,5 +236,5 @@ class PartKospiData {
     private String date ;
     private double indexValue ;
     private double totalEa ;
-//    private double totalVolume ;
+    private double totalVolume ;
 }
