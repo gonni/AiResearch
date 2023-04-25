@@ -10,7 +10,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import stock.representation.PriceCategory;
 import stock.representation.StockData;
 
 import java.io.FileReader;
@@ -71,9 +70,9 @@ public class KospiPartDsIterator implements DataSetIterator {
 
     public double[] getMinArray() { return minArray; }
 
-    public double getMaxNum (PriceCategory category) { return maxArray[featureMapIndex.get(category)]; }
+    public double getMaxNum (KospiIndexCategory category) { return maxArray[featureMapIndex.get(category)]; }
 
-    public double getMinNum (PriceCategory category) { return minArray[featureMapIndex.get(category)]; }
+    public double getMinNum (KospiIndexCategory category) { return minArray[featureMapIndex.get(category)]; }
 
 //    private final int VECTOR_SIZE = 5; // number of features for a stock data
 //    private int miniBatchSize; // mini-batch size
@@ -88,7 +87,7 @@ public class KospiPartDsIterator implements DataSetIterator {
         INDArray input = Nd4j.create(new int[] {actualMiniBatchSize, VECTOR_SIZE, exampleLength}, 'f'); // _,5,22
         INDArray label;
 
-        if (category.equals(PriceCategory.ALL)) label = Nd4j.create(new int[] {actualMiniBatchSize, VECTOR_SIZE, exampleLength}, 'f');
+        if (category.equals(KospiIndexCategory.ALL)) label = Nd4j.create(new int[] {actualMiniBatchSize, VECTOR_SIZE, exampleLength}, 'f');
         else label = Nd4j.create(new int[] {actualMiniBatchSize, predictLength, exampleLength}, 'f'); // _,1,22
 
         for (int index = 0; index < actualMiniBatchSize; index++) {
@@ -135,7 +134,7 @@ public class KospiPartDsIterator implements DataSetIterator {
     @Override public int inputColumns() { return VECTOR_SIZE; }
 
     @Override public int totalOutcomes() {
-        if (this.category.equals(PriceCategory.ALL)) return VECTOR_SIZE;
+        if (this.category.equals(KospiIndexCategory.ALL)) return VECTOR_SIZE;
         else return predictLength;
     }
 

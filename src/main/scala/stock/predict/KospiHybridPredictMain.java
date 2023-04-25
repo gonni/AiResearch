@@ -28,7 +28,7 @@ public class KospiHybridPredictMain {
 
         int batchSize = 64; // mini-batch size
         double splitRatio = 0.98; // 90% for training, 10% for testing
-        int epochs = 3; // training epochs
+        int epochs = 100; // training epochs
 
         KospiIndexCategory category = KospiIndexCategory.ALL;
 
@@ -39,7 +39,7 @@ public class KospiHybridPredictMain {
         log.info("Build lstm networks...");
         MultiLayerNetwork net = RecurrentNets.buildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
 
-        File modelFile = new File("model/Kospi2Indexes.mdl");
+        File modelFile = new File("model/Kospi3x3Ep100.mdl");
 
         log.info("Start Training ..");
         net.fit(iterator, epochs);
