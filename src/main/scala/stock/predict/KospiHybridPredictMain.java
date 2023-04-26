@@ -41,10 +41,10 @@ public class KospiHybridPredictMain {
 
         File modelFile = new File("model/Kospi3x3Ep100.mdl");
 
-        log.info("Start Training ..");
-        net.fit(iterator, epochs);
-        log.info("Save Model ..");
-        ModelSerializer.writeModel(net, modelFile, true);
+//        log.info("Start Training ..");
+//        net.fit(iterator, epochs);
+//        log.info("Save Model ..");
+//        ModelSerializer.writeModel(net, modelFile, true);
 
         net = MultiLayerNetwork.load(modelFile, true);
 
@@ -52,9 +52,57 @@ public class KospiHybridPredictMain {
         INDArray max = Nd4j.create(iterator.getMaxArray());
         INDArray min = Nd4j.create(iterator.getMinArray());
 
-        predictAllCategories(net, test, max, min);
+//        predictAllCategories(net, test, max, min);
 
+        predictAllCategoriesMultiDays(net, test, max, min, 3);
         System.out.println("Fin..");
+    }
+
+    /** Predict all the features (open, close, low, high prices and volume) of a stock one-day ahead */
+    static void predictAllCategoriesMultiDays (MultiLayerNetwork net, List<Pair<INDArray, INDArray>> testData,
+                                               INDArray max, INDArray min, int predictDays) {
+
+        System.out.println("Max -> " + max);
+        System.out.println("---------------------");
+        System.out.println("Min -> " + min);
+
+
+        INDArray[] predicts = new INDArray[testData.size() + predictDays];
+        INDArray[] actuals = new INDArray[testData.size() + predictDays];
+        for (int i = 0; i < testData.size(); i++) {
+            System.out.println("Input ->" + testData.get(i).getKey()) ;
+            INDArray output = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
+            System.out.println("Predict Output ->" + output) ;
+            predicts[i] = output.mul(max.sub(min)).add(min);
+//            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
+            actuals[i] = testData.get(i).getValue();
+        }
+
+        for(int i=0;i < predictDays; i++) {
+            actuals[testData.size() + i] = actuals[testData.size() - 1] ;
+            predicts[testData.size() + i] = predicts[testData.size() - 1] ;
+        }
+
+        log.info("Print out Predictions and Actual Values...");
+        log.info("Predict\tActual");
+
+        for (int i = 0; i < predicts.length ; i++) {
+//            log.info(predicts.length + "/" + actuals.length);
+            log.info(i + "-->" + predicts[i] + "\t" + actuals[i]);
+        }
+        log.info("Plot...");
+
+        for (int n = 0; n < 3; n++) {
+            double[] pred = new double[predicts.length ];
+            double[] actu = new double[actuals.length ];
+            for (int i = 0; i < predicts.length ; i++) {
+                pred[i] = predicts[i].getDouble(n);
+                actu[i] = actuals[i].getDouble(n);
+            }
+            String name = "IDX_" + n ;
+
+            PlotUtil.plot(pred, actu, name);
+        }
     }
 
     /** Predict all the features (open, close, low, high prices and volume) of a stock one-day ahead */
@@ -75,6 +123,7 @@ public class KospiHybridPredictMain {
 //            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
             actuals[i] = testData.get(i).getValue();
         }
+
         log.info("Print out Predictions and Actual Values...");
         log.info("Predict\tActual");
         for (int i = 0; i < predicts.length; i++) log.info(predicts[i] + "\t" + actuals[i]);
