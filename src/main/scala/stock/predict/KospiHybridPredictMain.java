@@ -4,6 +4,7 @@ import javafx.util.Pair;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stock.kospidata.*;
@@ -54,33 +55,99 @@ public class KospiHybridPredictMain {
 
 //        predictAllCategories(net, test, max, min);
 
-        predictAllCategoriesMultiDays(net, test, max, min, 3);
+//        predictAllCategoriesMultiDays(net, test, max, min, 3);
+
+        predictAllCategoriesMultiDaysV2(net, test, max, min, 3);
+
         System.out.println("Fin..");
+    }
+
+    static void predictAllCategoriesMultiDaysV2 (MultiLayerNetwork net, List<Pair<INDArray, INDArray>> testData,
+                                               INDArray max, INDArray min, int predictDays) {
+        INDArray[] predicts = new INDArray[testData.size() + predictDays];
+        INDArray[] actuals = new INDArray[testData.size() + predictDays];
+        INDArray outputAll = null ;
+        INDArray outputLast = null ;
+        INDArray inputLast = null ;
+
+        System.out.println("TestSize => " + testData.size());
+
+        for (int i = 0; i < testData.size(); i++) {
+            inputLast = testData.get(i).getKey() ;
+            System.out.println("Input ->" + inputLast) ;
+
+            outputAll = net.rnnTimeStep(inputLast);
+            outputLast = outputAll.getRow(exampleLength - 1);
+            System.out.println(i + "\tPredict Output ->" + outputLast) ;
+
+            predicts[i] = outputLast.mul(max.sub(min)).add(min);
+            actuals[i] = testData.get(i).getValue();
+        }
+
+        // ---------------------------
+        INDArray newInput = Nd4j.create(new int[] {exampleLength, 3}, 'f');
+        System.out.println("InputLast Length => " + inputLast.rows());
+
+        for(int i=1; i<inputLast.rows(); i++) {
+            System.out.println(i + " -> Element Shape -> " + inputLast.getRow(i));
+
+            for(int c=0;c<3;c++) {
+                newInput.putScalar(new int[] {i-1, c}, inputLast.getRow(i).getDouble(c));
+                // --
+            }
+        }
+
+        newInput.putScalar(new int[]{inputLast.rows() -1, 0}, outputLast.getDouble(0));
+        newInput.putScalar(new int[]{inputLast.rows() -1, 1}, outputLast.getDouble(1));
+        newInput.putScalar(new int[]{inputLast.rows() -1, 2}, outputLast.getDouble(2));
+
+        System.out.println("NewArray --> " + newInput);
+        // ---------------------------
+
+        log.info("Print out Predictions and Actual Values...");
+        log.info("Predict\tActual");
+
+        for (int i = 0; i < predicts.length ; i++) {
+//            log.info(predicts.length + "/" + actuals.length);
+            log.info(i + "-->" + predicts[i] + "\t" + actuals[i]);
+        }
+        log.info("Plot...");
+
+        for (int n = 0; n < 3; n++) {
+            double[] pred = new double[predicts.length ];
+            double[] actu = new double[actuals.length ];
+            for (int i = 0; i < predicts.length ; i++) {
+                pred[i] = predicts[i].getDouble(n);
+                actu[i] = actuals[i].getDouble(n);
+            }
+            String name = "IDX_" + n ;
+
+            PlotUtil.plot(pred, actu, name);
+        }
     }
 
     /** Predict all the features (open, close, low, high prices and volume) of a stock one-day ahead */
     static void predictAllCategoriesMultiDays (MultiLayerNetwork net, List<Pair<INDArray, INDArray>> testData,
                                                INDArray max, INDArray min, int predictDays) {
-
-        System.out.println("Max -> " + max);
-        System.out.println("---------------------");
-        System.out.println("Min -> " + min);
-
-
         INDArray[] predicts = new INDArray[testData.size() + predictDays];
         INDArray[] actuals = new INDArray[testData.size() + predictDays];
+        INDArray outputAll = null ;
         for (int i = 0; i < testData.size(); i++) {
             System.out.println("Input ->" + testData.get(i).getKey()) ;
-            INDArray output = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
-            System.out.println("Predict Output ->" + output) ;
+
+            outputAll = net.rnnTimeStep(testData.get(i).getKey());
+            System.out.println("Predict Output ->" + outputAll) ;
+            INDArray output = outputAll.getRow(exampleLength - 1);
+
             predicts[i] = output.mul(max.sub(min)).add(min);
-//            predicts[i] = net.rnnTimeStep(testData.get(i).getKey()).getRow(exampleLength - 1);
             actuals[i] = testData.get(i).getValue();
         }
 
         for(int i=0;i < predictDays; i++) {
             actuals[testData.size() + i] = actuals[testData.size() - 1] ;
-            predicts[testData.size() + i] = predicts[testData.size() - 1] ;
+
+            INDArray output = net.rnnTimeStep(outputAll).getRow(exampleLength - 1);
+            predicts[testData.size() + i] = output.mul(max.sub(min)).add(min); ;
         }
 
         log.info("Print out Predictions and Actual Values...");
